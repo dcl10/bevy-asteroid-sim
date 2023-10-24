@@ -1,9 +1,9 @@
 use bevy::prelude::*;
 
 #[derive(Component)]
-pub(crate) struct Planet {}
+pub struct Planet {}
 
 #[derive(Component, Default)]
-pub(crate) struct Mass {
+pub struct Mass {
     pub mass: f32,
 }
