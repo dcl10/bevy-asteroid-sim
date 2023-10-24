@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 
-const ASTEROID_SPAWN_DELAY_SECS: f32 = 5.0;
+const ASTEROID_SPAWN_DELAY_SECS: f32 = 1.0;
 
 #[derive(Resource)]
 pub struct AsteroidSpawnTimer {
