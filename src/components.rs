@@ -7,3 +7,6 @@ pub struct Planet {}
 pub struct Mass {
     pub mass: f32,
 }
+
+#[derive(Component)]
+pub struct Asteroid {}
