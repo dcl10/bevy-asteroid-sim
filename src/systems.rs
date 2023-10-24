@@ -3,6 +3,7 @@ use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
 
 use crate::components::{Mass, Planet};
+use crate::resources::AsteroidSpawnTimer;
 
 const PLANET_SIZE: f32 = 50.0;
 const PLANET_MASS: f32 = 1.9e27;
@@ -47,4 +48,12 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
         transform: Transform::from_xyz(window.width() / 2.0, window.height() / 2.0, 0.0),
         ..default()
     });
+}
+/// Tick the timer controlling the spawning of new asteroids.
+///
+/// # Arguments
+/// * `spawn_timer` - The timer controlling asteroid spawning.
+/// * `time` - the clock tracking the passage of time in game.
+pub fn tick_asteroid_spawn_timer(mut spawn_timer: ResMut<AsteroidSpawnTimer>, time: Res<Time>) {
+    spawn_timer.timer.tick(time.delta());
 }
