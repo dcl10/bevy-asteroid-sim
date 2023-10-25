@@ -197,3 +197,27 @@ pub fn collide_asteroids(
         }
     }
 }
+
+/// Despawn asteroids that have gone off-screen.
+///
+/// # Arguments
+/// * `commands` - a `bevy` `Commands` struct
+/// * `asteroids_query` - query to get asteroid entities and their coordinates
+/// * `window_query` - a query to get the primary window of the app
+pub fn despawn_off_screen_asteroid(
+    mut commands: Commands,
+    asteroids_query: Query<(Entity, &Transform), With<Asteroid>>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = window_query.get_single().unwrap();
+
+    for (entity, transform) in asteroids_query.iter() {
+        if transform.translation.x < 0.0 - ASTEROID_RADIUS
+            || transform.translation.x > window.width() + ASTEROID_RADIUS
+            || transform.translation.y < 0.0 - ASTEROID_RADIUS
+            || transform.translation.y > window.height() + ASTEROID_RADIUS
+        {
+            commands.entity(entity).despawn()
+        }
+    }
+}
