@@ -4,7 +4,7 @@ use bevy::window::PrimaryWindow;
 use rand::prelude::SliceRandom;
 use rand::random;
 
-use crate::components::{Asteroid, Mass, Planet, Position, Velocity};
+use crate::components::{Asteroid, Mass, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
 const PLANET_SIZE: f32 = 50.0;
@@ -43,8 +43,7 @@ pub fn spawn_planet(
                 ..default()
             },
             Planet {},
-            Mass { mass: PLANET_MASS },
-            Position { x, y }
+            Mass { mass: PLANET_MASS }
         )
     );
 }
@@ -102,7 +101,6 @@ pub fn spawn_asteroid(
             },
             Asteroid {},
             Mass { mass: ASTEROID_MASS },
-            Position { x, y },
             Velocity { x: vel_x, y: vel_y }
         )
     );
