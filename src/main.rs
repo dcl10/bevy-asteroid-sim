@@ -1,7 +1,7 @@
 use bevy::{prelude::*};
 
 use crate::resources::AsteroidSpawnTimer;
-use crate::systems::{spawn_asteroid, spawn_camera, spawn_planet, tick_asteroid_spawn_timer};
+use crate::systems::{move_asteroids, spawn_asteroid, spawn_camera, spawn_planet, tick_asteroid_spawn_timer};
 
 mod components;
 mod systems;
@@ -13,5 +13,6 @@ fn main() {
         .init_resource::<AsteroidSpawnTimer>()
         .add_systems(Startup, (spawn_camera, spawn_planet).chain())
         .add_systems(Update, (tick_asteroid_spawn_timer, spawn_asteroid))
+        .add_systems(Update, move_asteroids)
         .run();
 }

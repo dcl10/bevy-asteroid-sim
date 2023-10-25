@@ -10,3 +10,9 @@ pub struct Mass {
 
 #[derive(Component)]
 pub struct Asteroid {}
+
+#[derive(Component)]
+pub struct Velocity {
+    pub x: f32,
+    pub y: f32,
+}
