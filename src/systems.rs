@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
-use itertools::Itertools;
 use rand::{random, Rng};
 
 use crate::components::{Asteroid, Mass, Planet, Velocity};
@@ -183,34 +182,27 @@ pub fn collide_asteroids(
     mut commands: Commands,
     asteroids_query: Query<(Entity, &Transform), With<Asteroid>>,
 ) {
-    let transforms = asteroids_query.iter().combinations(2);
-
-    for combination in transforms.into_iter() {
+    for [c1, c2] in asteroids_query.iter_combinations() {
         // unpack entities
-        let c1 = combination.first();
-        let c2 = combination.last();
+        let (e1, t1) = c1;
+        let (e2, t2) = c2;
 
-        match (c1, c2) {
-            (Some((e1, t1)), Some((e2, t2))) => {
-                // calculate the absolute distance between them
-                let abs_dist_x = (t1.translation.x - t2.translation.x).powf(2.0);
-                let abs_dist_y = (t1.translation.y - t2.translation.y).powf(2.0);
-                let abs_dist = (abs_dist_x + abs_dist_y).sqrt();
+        // calculate the absolute distance between them
+        let abs_dist_x = (t1.translation.x - t2.translation.x).powf(2.0);
+        let abs_dist_y = (t1.translation.y - t2.translation.y).powf(2.0);
+        let abs_dist = (abs_dist_x + abs_dist_y).sqrt();
 
-                // delete the entities
-                if abs_dist <= ASTEROID_RADIUS * 2.0 {
-                    match commands.get_entity(*e1) {
-                        None => {}
-                        Some(mut e) => e.despawn(),
-                    }
-
-                    match commands.get_entity(*e2) {
-                        None => {}
-                        Some(mut e) => e.despawn(),
-                    }
-                }
+        // delete the entities
+        if abs_dist <= ASTEROID_RADIUS * 2.0 {
+            match commands.get_entity(e1) {
+                None => {}
+                Some(mut e) => e.despawn(),
             }
-            _ => {} // ignore if there aren't 2 entities to collide
+
+            match commands.get_entity(e2) {
+                None => {}
+                Some(mut e) => e.despawn(),
+            }
         }
     }
 }
@@ -238,3 +230,5 @@ pub fn despawn_off_screen_asteroid(
         }
     }
 }
+
+pub fn gravity() {}
