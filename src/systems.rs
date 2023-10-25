@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
+use rand::prelude::SliceRandom;
 use rand::random;
 
-use crate::components::{Asteroid, Mass, Planet};
+use crate::components::{Asteroid, Mass, Planet, Position, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
 const PLANET_SIZE: f32 = 50.0;
@@ -11,6 +12,7 @@ const PLANET_MASS: f32 = 100.0;
 
 const ASTEROID_SIZE: f32 = 10.0;
 const ASTEROID_MASS: f32 = 10.0;
+const ASTEROID_SPEED: f32 = 2.0;
 
 /// Spawn the planet in the centre of the screen.
 ///
@@ -26,17 +28,23 @@ pub fn spawn_planet(
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let window = window_query.get_single().unwrap();
+
+    // Set planet coordinates
+    let x = window.width() / 2.0;
+    let y = window.height() / 2.0;
+
     // Circle
     commands.spawn(
         (
             MaterialMesh2dBundle {
                 mesh: meshes.add(shape::Circle::new(PLANET_SIZE).into()).into(),
                 material: materials.add(ColorMaterial::from(Color::PURPLE)),
-                transform: Transform::from_xyz(window.width() / 2.0, window.height() / 2.0, 0.0),
+                transform: Transform::from_xyz(x, y, 0.0),
                 ..default()
             },
             Planet {},
-            Mass { mass: PLANET_MASS }
+            Mass { mass: PLANET_MASS },
+            Position { x, y }
         )
     );
 }
@@ -76,8 +84,13 @@ pub fn spawn_asteroid(
         return;
     }
 
+    // Set spawn coordinates
     let x = random::<f32>() * window.width();
     let y = random::<f32>() * window.height();
+
+    // Set initial velocities
+    let vel_x = vec![-1.0 * ASTEROID_SPEED, ASTEROID_SPEED].choose(&mut rand::thread_rng()).unwrap();
+    let vel_y = vec![-1.0 * ASTEROID_SPEED, ASTEROID_SPEED].choose(&mut rand::thread_rng()).unwrap();
 
     commands.spawn(
         (
@@ -88,7 +101,9 @@ pub fn spawn_asteroid(
                 ..default()
             },
             Asteroid {},
-            Mass { mass: ASTEROID_MASS }
+            Mass { mass: ASTEROID_MASS },
+            Position { x, y },
+            Velocity { x: vel_x.into(), y: vel_y.into() }
         )
     );
 }
