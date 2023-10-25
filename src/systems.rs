@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
-use rand::prelude::SliceRandom;
-use rand::random;
+use rand::{random, Rng};
 
 use crate::components::{Asteroid, Mass, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
@@ -88,8 +87,9 @@ pub fn spawn_asteroid(
     let y = random::<f32>() * window.height();
 
     // Set initial velocities
-    let vel_x = vec![-1.0 * ASTEROID_SPEED, ASTEROID_SPEED].choose(&mut rand::thread_rng()).cloned().unwrap();
-    let vel_y = vec![-1.0 * ASTEROID_SPEED, ASTEROID_SPEED].choose(&mut rand::thread_rng()).cloned().unwrap();
+    let mut rng = rand::thread_rng();
+    let vel_x = rng.gen_range(-1.0 * ASTEROID_SPEED..ASTEROID_SPEED);
+    let vel_y = rng.gen_range(-1.0 * ASTEROID_SPEED..ASTEROID_SPEED);
 
     commands.spawn(
         (
