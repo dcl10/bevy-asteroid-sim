@@ -1,15 +1,16 @@
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
+use itertools::Itertools;
 use rand::{random, Rng};
 
 use crate::components::{Asteroid, Mass, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
-const PLANET_SIZE: f32 = 50.0;
+const PLANET_RADIUS: f32 = 50.0;
 const PLANET_MASS: f32 = 100.0;
 
-const ASTEROID_SIZE: f32 = 10.0;
+const ASTEROID_RADIUS: f32 = 10.0;
 const ASTEROID_MASS: f32 = 10.0;
 const ASTEROID_SPEED: f32 = 100.0;
 
@@ -36,7 +37,7 @@ pub fn spawn_planet(
     commands.spawn(
         (
             MaterialMesh2dBundle {
-                mesh: meshes.add(shape::Circle::new(PLANET_SIZE).into()).into(),
+                mesh: meshes.add(shape::Circle::new(PLANET_RADIUS).into()).into(),
                 material: materials.add(ColorMaterial::from(Color::PURPLE)),
                 transform: Transform::from_xyz(x, y, 0.0),
                 ..default()
@@ -94,7 +95,7 @@ pub fn spawn_asteroid(
     commands.spawn(
         (
             MaterialMesh2dBundle {
-                mesh: meshes.add(shape::Circle::new(ASTEROID_SIZE).into()).into(),
+                mesh: meshes.add(shape::Circle::new(ASTEROID_RADIUS).into()).into(),
                 material: materials.add(ColorMaterial::from(Color::BLUE)),
                 transform: Transform::from_xyz(x, y, 0.0),
                 ..default()
@@ -152,8 +153,51 @@ pub fn collide_asteroids_with_planet(
         let abs_dist_x = (planet_transform.translation.x - asteroid_transform.translation.x).powf(2.0);
         let abs_dist_y = (planet_transform.translation.y - asteroid_transform.translation.y).powf(2.0);
         let abs_dist = (abs_dist_x + abs_dist_y).sqrt();
-        if abs_dist <= ASTEROID_SIZE + PLANET_SIZE {
+        if abs_dist <= ASTEROID_RADIUS + PLANET_RADIUS {
             commands.entity(entity).despawn();
+        }
+    }
+}
+
+/// Collide asteroids with each other and despawn them.
+///
+/// # Arguments
+/// * `commands` - a `bevy` `Commands` struct
+/// * `asteroids_query` - query to get asteroid entities and their coordinates
+pub fn collide_asteroids(
+    mut commands: Commands,
+    asteroids_query: Query<(Entity, &Transform), With<Asteroid>>,
+) {
+    let transforms = asteroids_query
+        .iter()
+        .combinations(2);
+
+    for combination in transforms.into_iter() {
+        // unpack entities
+        let c1 = combination.first();
+        let c2 = combination.last();
+
+        match (c1, c2) {
+            (Some((e1, t1)), Some((e2, t2))) => {
+                // calculate the absolute distance between them
+                let abs_dist_x = (t1.translation.x - t2.translation.x).powf(2.0);
+                let abs_dist_y = (t1.translation.y - t2.translation.y).powf(2.0);
+                let abs_dist = (abs_dist_x + abs_dist_y).sqrt();
+
+                // delete the entities
+                if abs_dist <= ASTEROID_RADIUS * 2.0 {
+                    match commands.get_entity(*e1) {
+                        None => {}
+                        Some(mut e) => e.despawn()
+                    }
+
+                    match commands.get_entity(*e2) {
+                        None => {}
+                        Some(mut e) => { e.despawn() }
+                    }
+                }
+            }
+            _ => {}  // ignore if there aren't 2 entities to collide
         }
     }
 }
