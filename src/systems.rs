@@ -34,18 +34,16 @@ pub fn spawn_planet(
     let y = window.height() / 2.0;
 
     // Circle
-    commands.spawn(
-        (
-            MaterialMesh2dBundle {
-                mesh: meshes.add(shape::Circle::new(PLANET_RADIUS).into()).into(),
-                material: materials.add(ColorMaterial::from(Color::PURPLE)),
-                transform: Transform::from_xyz(x, y, 0.0),
-                ..default()
-            },
-            Planet {},
-            Mass { mass: PLANET_MASS }
-        )
-    );
+    commands.spawn((
+        MaterialMesh2dBundle {
+            mesh: meshes.add(shape::Circle::new(PLANET_RADIUS).into()).into(),
+            material: materials.add(ColorMaterial::from(Color::PURPLE)),
+            transform: Transform::from_xyz(x, y, 0.0),
+            ..default()
+        },
+        Planet {},
+        Mass { mass: PLANET_MASS },
+    ));
 }
 
 /// Spawn the camera in the centre of the screen.
@@ -60,7 +58,6 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
         ..default()
     });
 }
-
 
 /// Spawn an asteroid randomly.
 ///
@@ -84,27 +81,46 @@ pub fn spawn_asteroid(
     }
 
     // Set spawn coordinates
-    let x = random::<f32>() * window.width();
-    let y = random::<f32>() * window.height();
+    let mut x = random::<f32>() * window.width();
+    let mut y = random::<f32>() * window.height();
+
+    // Randomly assign the off-screen asteroid spawn location
+    if random::<bool>() {
+        // spawn from either left or right of the screen
+        x = if random::<bool>() {
+            0.0
+        } else {
+            window.width()
+        };
+    } else {
+        // spawn from either top or bottom of the screen
+        y = if random::<bool>() {
+            0.0
+        } else {
+            window.height()
+        };
+    }
 
     // Set initial velocities
     let mut rng = rand::thread_rng();
     let vel_x = rng.gen_range(-1.0 * ASTEROID_SPEED..ASTEROID_SPEED);
     let vel_y = rng.gen_range(-1.0 * ASTEROID_SPEED..ASTEROID_SPEED);
 
-    commands.spawn(
-        (
-            MaterialMesh2dBundle {
-                mesh: meshes.add(shape::Circle::new(ASTEROID_RADIUS).into()).into(),
-                material: materials.add(ColorMaterial::from(Color::BLUE)),
-                transform: Transform::from_xyz(x, y, 0.0),
-                ..default()
-            },
-            Asteroid {},
-            Mass { mass: ASTEROID_MASS },
-            Velocity { x: vel_x, y: vel_y }
-        )
-    );
+    commands.spawn((
+        MaterialMesh2dBundle {
+            mesh: meshes
+                .add(shape::Circle::new(ASTEROID_RADIUS).into())
+                .into(),
+            material: materials.add(ColorMaterial::from(Color::BLUE)),
+            transform: Transform::from_xyz(x, y, 0.0),
+            ..default()
+        },
+        Asteroid {},
+        Mass {
+            mass: ASTEROID_MASS,
+        },
+        Velocity { x: vel_x, y: vel_y },
+    ));
 }
 
 /// Tick the timer controlling the spawning of new asteroids.
@@ -127,11 +143,8 @@ pub fn move_asteroids(
 ) {
     for (_, mut position, velocity) in asteroids.iter_mut() {
         let elapsed_time = time.delta_seconds();
-        position.translation += Vec3::new(
-            velocity.x * elapsed_time,
-            velocity.y * elapsed_time,
-            0.0,
-        );
+        position.translation +=
+            Vec3::new(velocity.x * elapsed_time, velocity.y * elapsed_time, 0.0);
     }
 }
 
@@ -150,8 +163,10 @@ pub fn collide_asteroids_with_planet(
 
     // Collide with the planet
     for (entity, asteroid_transform) in asteroids_query.iter() {
-        let abs_dist_x = (planet_transform.translation.x - asteroid_transform.translation.x).powf(2.0);
-        let abs_dist_y = (planet_transform.translation.y - asteroid_transform.translation.y).powf(2.0);
+        let abs_dist_x =
+            (planet_transform.translation.x - asteroid_transform.translation.x).powf(2.0);
+        let abs_dist_y =
+            (planet_transform.translation.y - asteroid_transform.translation.y).powf(2.0);
         let abs_dist = (abs_dist_x + abs_dist_y).sqrt();
         if abs_dist <= ASTEROID_RADIUS + PLANET_RADIUS {
             commands.entity(entity).despawn();
@@ -168,9 +183,7 @@ pub fn collide_asteroids(
     mut commands: Commands,
     asteroids_query: Query<(Entity, &Transform), With<Asteroid>>,
 ) {
-    let transforms = asteroids_query
-        .iter()
-        .combinations(2);
+    let transforms = asteroids_query.iter().combinations(2);
 
     for combination in transforms.into_iter() {
         // unpack entities
@@ -188,16 +201,40 @@ pub fn collide_asteroids(
                 if abs_dist <= ASTEROID_RADIUS * 2.0 {
                     match commands.get_entity(*e1) {
                         None => {}
-                        Some(mut e) => e.despawn()
+                        Some(mut e) => e.despawn(),
                     }
 
                     match commands.get_entity(*e2) {
                         None => {}
-                        Some(mut e) => { e.despawn() }
+                        Some(mut e) => e.despawn(),
                     }
                 }
             }
-            _ => {}  // ignore if there aren't 2 entities to collide
+            _ => {} // ignore if there aren't 2 entities to collide
+        }
+    }
+}
+
+/// Despawn asteroids that have gone off-screen.
+///
+/// # Arguments
+/// * `commands` - a `bevy` `Commands` struct
+/// * `asteroids_query` - query to get asteroid entities and their coordinates
+/// * `window_query` - a query to get the primary window of the app
+pub fn despawn_off_screen_asteroid(
+    mut commands: Commands,
+    asteroids_query: Query<(Entity, &Transform), With<Asteroid>>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = window_query.get_single().unwrap();
+
+    for (entity, transform) in asteroids_query.iter() {
+        if transform.translation.x < 0.0 - ASTEROID_RADIUS
+            || transform.translation.x > window.width() + ASTEROID_RADIUS
+            || transform.translation.y < 0.0 - ASTEROID_RADIUS
+            || transform.translation.y > window.height() + ASTEROID_RADIUS
+        {
+            commands.entity(entity).despawn()
         }
     }
 }
