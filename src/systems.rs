@@ -133,3 +133,27 @@ pub fn move_asteroids(
         );
     }
 }
+
+/// Collide asteroids with the planet and despawn them.
+///
+/// # Arguments
+/// * `commands` - a `bevy` `Commands` struct
+/// * `asteroids_query` - query to get asteroid entities and their coordinates
+/// * `planet_query` - query to get the coordinates of the planet
+pub fn collide_asteroids_with_planet(
+    mut commands: Commands,
+    asteroids_query: Query<(Entity, &Transform), With<Asteroid>>,
+    planet_query: Query<&Transform, With<Planet>>,
+) {
+    let planet_transform = planet_query.get_single().unwrap();
+
+    // Collide with the planet
+    for (entity, asteroid_transform) in asteroids_query.iter() {
+        let abs_dist_x = (planet_transform.translation.x - asteroid_transform.translation.x).powf(2.0);
+        let abs_dist_y = (planet_transform.translation.y - asteroid_transform.translation.y).powf(2.0);
+        let abs_dist = (abs_dist_x + abs_dist_y).sqrt();
+        if abs_dist <= ASTEROID_SIZE + PLANET_SIZE {
+            commands.entity(entity).despawn();
+        }
+    }
+}
