@@ -1,11 +1,14 @@
-use bevy::{prelude::*};
+use bevy::prelude::*;
 
 use crate::resources::AsteroidSpawnTimer;
-use crate::systems::{collide_asteroids, collide_asteroids_with_planet, move_asteroids, spawn_asteroid, spawn_camera, spawn_planet, tick_asteroid_spawn_timer};
+use crate::systems::{
+    collide_asteroids, collide_asteroids_with_planet, move_asteroids, spawn_asteroid, spawn_camera,
+    spawn_planet, tick_asteroid_spawn_timer,
+};
 
 mod components;
-mod systems;
 mod resources;
+mod systems;
 
 fn main() {
     App::new()
