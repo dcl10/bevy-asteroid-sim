@@ -89,8 +89,8 @@ pub fn spawn_asteroid(
     let y = random::<f32>() * window.height();
 
     // Set initial velocities
-    let vel_x = vec![-1.0 * ASTEROID_SPEED, ASTEROID_SPEED].choose(&mut rand::thread_rng()).unwrap();
-    let vel_y = vec![-1.0 * ASTEROID_SPEED, ASTEROID_SPEED].choose(&mut rand::thread_rng()).unwrap();
+    let vel_x = vec![-1.0 * ASTEROID_SPEED, ASTEROID_SPEED].choose(&mut rand::thread_rng()).cloned().unwrap();
+    let vel_y = vec![-1.0 * ASTEROID_SPEED, ASTEROID_SPEED].choose(&mut rand::thread_rng()).cloned().unwrap();
 
     commands.spawn(
         (
@@ -103,7 +103,7 @@ pub fn spawn_asteroid(
             Asteroid {},
             Mass { mass: ASTEROID_MASS },
             Position { x, y },
-            Velocity { x: vel_x.into(), y: vel_y.into() }
+            Velocity { x: vel_x, y: vel_y }
         )
     );
 }
