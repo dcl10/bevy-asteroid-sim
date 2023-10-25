@@ -81,8 +81,25 @@ pub fn spawn_asteroid(
     }
 
     // Set spawn coordinates
-    let x = random::<f32>() * window.width();
-    let y = random::<f32>() * window.height();
+    let mut x = random::<f32>() * window.width();
+    let mut y = random::<f32>() * window.height();
+
+    // Randomly assign the off-screen asteroid spawn location
+    if random::<bool>() {
+        // spawn from either left or right of the screen
+        x = if random::<bool>() {
+            0.0
+        } else {
+            window.width()
+        };
+    } else {
+        // spawn from either top or bottom of the screen
+        y = if random::<bool>() {
+            0.0
+        } else {
+            window.height()
+        };
+    }
 
     // Set initial velocities
     let mut rng = rand::thread_rng();
