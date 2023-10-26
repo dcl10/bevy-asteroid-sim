@@ -234,6 +234,11 @@ pub fn despawn_off_screen_asteroid(
     }
 }
 
+/// Alter the velocities of asteroids due to gravity from the planet.
+///
+/// # Arguments
+/// * `asteroids_query` - query to get asteroid coordinates, masses and velocities
+/// * `planet_query` - query to get the coordinates and mass of the planet
 pub fn gravity(
     mut asteroids_query: Query<(&Transform, &Mass, &mut Velocity), With<Asteroid>>,
     planet_query: Query<(&Transform, &Mass), With<Planet>>,
