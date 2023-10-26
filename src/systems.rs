@@ -6,8 +6,8 @@ use rand::{random, Rng};
 use crate::components::{Asteroid, Mass, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
-const PLANET_RADIUS: f32 = 100.0;
-const PLANET_MASS: f32 = 100.0;
+const PLANET_RADIUS: f32 = 10.0;
+const PLANET_MASS: f32 = 10000.0;
 
 const ASTEROID_RADIUS: f32 = 10.0;
 const ASTEROID_MASS: f32 = 10.0;
@@ -233,42 +233,36 @@ pub fn despawn_off_screen_asteroid(
     }
 }
 
-pub fn gravity(mut query: Query<(&Transform, &Mass, Option<&mut Velocity>)>, time: Res<Time>) {
+pub fn gravity(
+    mut asteroids_query: Query<(&Transform, &Mass, &mut Velocity), With<Asteroid>>,
+    planet_query: Query<(&Transform, &Mass), With<Planet>>,
+    time: Res<Time>,
+) {
     // Get elapsed time
     let elapsed_time = time.delta_seconds();
-    let mut combinations = query.iter_combinations_mut();
 
-    while let Some([c1, c2]) = combinations.fetch_next() {
-        let (t1, m1, v1) = c1;
-        let (t2, m2, v2) = c2;
+    // Get the planet
+    let (tp, mp) = planet_query.get_single().unwrap();
 
-        // Get absolute distance between them (the radius)
-        let abs_dist = t2.translation - t1.translation;
+    for (ta, ma, mut va) in asteroids_query.iter_mut() {
+        // Get squared absolute distance between planet and asteroid
+        let dist_sq = tp.translation.distance_squared(ta.translation);
 
         // Calculate force of gravity
-        let f = (G * m1.mass * m2.mass) / abs_dist.length_squared();
+        let f = (G * mp.mass * ma.mass) / dist_sq;
 
         // Calculate acceleration due to gravity
-        let acceleration1 = f / m1.mass;
-        let acceleration2 = f / m2.mass;
+        let acceleration = f / ma.mass;
+
+        // Calculate component acceleration
+        let theta = (tp.translation.y - ta.translation.y)
+            .to_radians()
+            .atan2((tp.translation.x - ta.translation.x).to_radians());
+        let acceleration_x = theta.cos() * acceleration;
+        let acceleration_y = theta.sin() * acceleration;
 
         // Accelerate
-        let theta = t2.translation.angle_between(t1.translation);
-        let acceleration1_x = theta.cos().to_degrees() * acceleration1;
-        let acceleration1_y = theta.sin().to_degrees() * acceleration1;
-        let acceleration2_x = theta.cos().to_degrees() * acceleration2;
-        let acceleration2_y = theta.sin().to_degrees() * acceleration2;
-
-        if v1.is_some() {
-            let mut v = v1.unwrap();
-            v.x += acceleration1_x * elapsed_time;
-            v.y += acceleration1_y * elapsed_time;
-        }
-
-        if v2.is_some() {
-            let mut v = v2.unwrap();
-            v.x -= acceleration2_x * elapsed_time;
-            v.y -= acceleration2_y * elapsed_time;
-        }
+        va.x += acceleration_x * elapsed_time;
+        va.y += acceleration_y * elapsed_time;
     }
 }
