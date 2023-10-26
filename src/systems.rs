@@ -1,18 +1,20 @@
 use bevy::prelude::*;
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
-use itertools::Itertools;
 use rand::{random, Rng};
 
 use crate::components::{Asteroid, Mass, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
+const SCALE_FACTOR: f32 = 10e9;
 const PLANET_RADIUS: f32 = 50.0;
-const PLANET_MASS: f32 = 100.0;
+const PLANET_MASS: f32 = 1.9e27 / SCALE_FACTOR;
 
 const ASTEROID_RADIUS: f32 = 10.0;
-const ASTEROID_MASS: f32 = 10.0;
+const ASTEROID_MASS: f32 = 9.3e20 / SCALE_FACTOR;
 const ASTEROID_SPEED: f32 = 100.0;
+
+const G: f32 = 6.67e-11;
 
 /// Spawn the planet in the centre of the screen.
 ///
@@ -183,34 +185,27 @@ pub fn collide_asteroids(
     mut commands: Commands,
     asteroids_query: Query<(Entity, &Transform), With<Asteroid>>,
 ) {
-    let transforms = asteroids_query.iter().combinations(2);
-
-    for combination in transforms.into_iter() {
+    for [c1, c2] in asteroids_query.iter_combinations() {
         // unpack entities
-        let c1 = combination.first();
-        let c2 = combination.last();
+        let (e1, t1) = c1;
+        let (e2, t2) = c2;
 
-        match (c1, c2) {
-            (Some((e1, t1)), Some((e2, t2))) => {
-                // calculate the absolute distance between them
-                let abs_dist_x = (t1.translation.x - t2.translation.x).powf(2.0);
-                let abs_dist_y = (t1.translation.y - t2.translation.y).powf(2.0);
-                let abs_dist = (abs_dist_x + abs_dist_y).sqrt();
+        // calculate the absolute distance between them
+        let abs_dist_x = (t1.translation.x - t2.translation.x).powf(2.0);
+        let abs_dist_y = (t1.translation.y - t2.translation.y).powf(2.0);
+        let abs_dist = (abs_dist_x + abs_dist_y).sqrt();
 
-                // delete the entities
-                if abs_dist <= ASTEROID_RADIUS * 2.0 {
-                    match commands.get_entity(*e1) {
-                        None => {}
-                        Some(mut e) => e.despawn(),
-                    }
-
-                    match commands.get_entity(*e2) {
-                        None => {}
-                        Some(mut e) => e.despawn(),
-                    }
-                }
+        // delete the entities
+        if abs_dist <= ASTEROID_RADIUS * 2.0 {
+            match commands.get_entity(e1) {
+                None => {}
+                Some(mut e) => e.despawn(),
             }
-            _ => {} // ignore if there aren't 2 entities to collide
+
+            match commands.get_entity(e2) {
+                None => {}
+                Some(mut e) => e.despawn(),
+            }
         }
     }
 }
@@ -236,5 +231,44 @@ pub fn despawn_off_screen_asteroid(
         {
             commands.entity(entity).despawn()
         }
+    }
+}
+
+/// Alter the velocities of asteroids due to gravity from the planet.
+///
+/// # Arguments
+/// * `asteroids_query` - query to get asteroid coordinates, masses and velocities
+/// * `planet_query` - query to get the coordinates and mass of the planet
+pub fn gravity(
+    mut asteroids_query: Query<(&Transform, &Mass, &mut Velocity), With<Asteroid>>,
+    planet_query: Query<(&Transform, &Mass), With<Planet>>,
+    time: Res<Time>,
+) {
+    // Get elapsed time
+    let elapsed_time = time.delta_seconds();
+
+    // Get the planet
+    let (tp, mp) = planet_query.get_single().unwrap();
+
+    for (ta, ma, mut va) in asteroids_query.iter_mut() {
+        // Get squared absolute distance between planet and asteroid
+        let dist_sq = tp.translation.distance_squared(ta.translation);
+
+        // Calculate force of gravity
+        let f = (G * mp.mass * ma.mass) / dist_sq;
+
+        // Calculate acceleration due to gravity
+        let acceleration = f / ma.mass;
+
+        // Calculate component acceleration
+        let theta = (tp.translation.y - ta.translation.y)
+            .to_radians()
+            .atan2((tp.translation.x - ta.translation.x).to_radians());
+        let acceleration_x = theta.cos() * acceleration;
+        let acceleration_y = theta.sin() * acceleration;
+
+        // Accelerate
+        va.x += acceleration_x * elapsed_time;
+        va.y += acceleration_y * elapsed_time;
     }
 }
