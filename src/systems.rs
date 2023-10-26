@@ -6,12 +6,14 @@ use rand::{random, Rng};
 use crate::components::{Asteroid, Mass, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
-const PLANET_RADIUS: f32 = 50.0;
+const PLANET_RADIUS: f32 = 100.0;
 const PLANET_MASS: f32 = 100.0;
 
 const ASTEROID_RADIUS: f32 = 10.0;
 const ASTEROID_MASS: f32 = 10.0;
 const ASTEROID_SPEED: f32 = 100.0;
+
+const G: f32 = 100.0;
 
 /// Spawn the planet in the centre of the screen.
 ///
@@ -231,4 +233,42 @@ pub fn despawn_off_screen_asteroid(
     }
 }
 
-pub fn gravity() {}
+pub fn gravity(mut query: Query<(&Transform, &Mass, Option<&mut Velocity>)>, time: Res<Time>) {
+    // Get elapsed time
+    let elapsed_time = time.delta_seconds();
+    let mut combinations = query.iter_combinations_mut();
+
+    while let Some([c1, c2]) = combinations.fetch_next() {
+        let (t1, m1, v1) = c1;
+        let (t2, m2, v2) = c2;
+
+        // Get absolute distance between them (the radius)
+        let abs_dist = t2.translation - t1.translation;
+
+        // Calculate force of gravity
+        let f = (G * m1.mass * m2.mass) / abs_dist.length_squared();
+
+        // Calculate acceleration due to gravity
+        let acceleration1 = f / m1.mass;
+        let acceleration2 = f / m2.mass;
+
+        // Accelerate
+        let theta = t2.translation.angle_between(t1.translation);
+        let acceleration1_x = theta.cos().to_degrees() * acceleration1;
+        let acceleration1_y = theta.sin().to_degrees() * acceleration1;
+        let acceleration2_x = theta.cos().to_degrees() * acceleration2;
+        let acceleration2_y = theta.sin().to_degrees() * acceleration2;
+
+        if v1.is_some() {
+            let mut v = v1.unwrap();
+            v.x += acceleration1_x * elapsed_time;
+            v.y += acceleration1_y * elapsed_time;
+        }
+
+        if v2.is_some() {
+            let mut v = v2.unwrap();
+            v.x -= acceleration2_x * elapsed_time;
+            v.y -= acceleration2_y * elapsed_time;
+        }
+    }
+}

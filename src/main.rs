@@ -2,8 +2,8 @@ use bevy::prelude::*;
 
 use crate::resources::AsteroidSpawnTimer;
 use crate::systems::{
-    collide_asteroids, collide_asteroids_with_planet, despawn_off_screen_asteroid, move_asteroids,
-    spawn_asteroid, spawn_camera, spawn_planet, tick_asteroid_spawn_timer,
+    collide_asteroids, collide_asteroids_with_planet, despawn_off_screen_asteroid, gravity,
+    move_asteroids, spawn_asteroid, spawn_camera, spawn_planet, tick_asteroid_spawn_timer,
 };
 
 mod components;
@@ -21,5 +21,6 @@ fn main() {
         .add_systems(Update, collide_asteroids_with_planet)
         .add_systems(Update, collide_asteroids)
         .add_systems(Update, despawn_off_screen_asteroid)
+        .add_systems(Update, gravity)
         .run();
 }
