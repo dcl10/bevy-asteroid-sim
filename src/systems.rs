@@ -6,14 +6,15 @@ use rand::{random, Rng};
 use crate::components::{Asteroid, Mass, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
-const PLANET_RADIUS: f32 = 10.0;
-const PLANET_MASS: f32 = 10000.0;
+const SCALE_FACTOR: f32 = 10e9;
+const PLANET_RADIUS: f32 = 50.0;
+const PLANET_MASS: f32 = 1.9e27 / SCALE_FACTOR;
 
 const ASTEROID_RADIUS: f32 = 10.0;
-const ASTEROID_MASS: f32 = 10.0;
+const ASTEROID_MASS: f32 = 9.3e20 / SCALE_FACTOR;
 const ASTEROID_SPEED: f32 = 100.0;
 
-const G: f32 = 100.0;
+const G: f32 = 6.67e-11;
 
 /// Spawn the planet in the centre of the screen.
 ///
