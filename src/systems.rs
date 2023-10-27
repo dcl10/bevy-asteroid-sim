@@ -9,7 +9,7 @@ use crate::resources::AsteroidSpawnTimer;
 const SCALE_FACTOR: f32 = 10e9;
 const PLANET_RADIUS: f32 = 50.0;
 const PLANET_MASS: f32 = 1.9e27 / SCALE_FACTOR;
-const PLANET_ANGULAR_SPEED: f32 = 5.0;
+const PLANET_ANGULAR_SPEED: f32 = 0.5;
 const PLANET_PNG: &str = "images/planet05.png";
 
 const ASTEROID_RADIUS: f32 = 10.0;
@@ -116,6 +116,7 @@ pub fn spawn_asteroid(
     let mut rng = rand::thread_rng();
     let vel_x = rng.gen_range(-1.0 * ASTEROID_SPEED..ASTEROID_SPEED);
     let vel_y = rng.gen_range(-1.0 * ASTEROID_SPEED..ASTEROID_SPEED);
+    let omega = (random::<f32>() * ASTEROID_ANGULAR_SPEED) * [-1.0, 1.0].choose(&mut rng).unwrap();
 
     commands.spawn((
         SpriteBundle {
@@ -128,9 +129,7 @@ pub fn spawn_asteroid(
             mass: ASTEROID_MASS,
         },
         Velocity { x: vel_x, y: vel_y },
-        AngularVelocity {
-            velocity: random::<f32>() * ASTEROID_ANGULAR_SPEED,
-        },
+        AngularVelocity { velocity: omega },
     ));
 }
 
@@ -279,5 +278,11 @@ pub fn gravity(
         // Accelerate
         va.x += acceleration_x * elapsed_time;
         va.y += acceleration_y * elapsed_time;
+    }
+}
+
+pub fn rotate_body(mut query: Query<(&mut Transform, &AngularVelocity)>, time: Res<Time>) {
+    for (mut transform, omega) in query.iter_mut() {
+        transform.rotate_z(omega.velocity * time.delta_seconds())
     }
 }
