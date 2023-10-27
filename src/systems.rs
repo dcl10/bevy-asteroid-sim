@@ -3,17 +3,19 @@ use bevy::window::PrimaryWindow;
 use rand::seq::SliceRandom;
 use rand::{random, Rng};
 
-use crate::components::{Asteroid, Mass, Planet, Velocity};
+use crate::components::{AngularVelocity, Asteroid, Mass, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
 const SCALE_FACTOR: f32 = 10e9;
 const PLANET_RADIUS: f32 = 50.0;
 const PLANET_MASS: f32 = 1.9e27 / SCALE_FACTOR;
+const PLANET_ANGULAR_SPEED: f32 = 5.0;
 const PLANET_PNG: &str = "images/planet05.png";
 
 const ASTEROID_RADIUS: f32 = 10.0;
 const ASTEROID_MASS: f32 = 9.3e20 / SCALE_FACTOR;
 const ASTEROID_SPEED: f32 = 100.0;
+const ASTEROID_ANGULAR_SPEED: f32 = 20.0;
 const ASTEROID_PNGS: [&str; 4] = [
     "images/meteorBrown_big1.png",
     "images/meteorBrown_big2.png",
@@ -50,6 +52,9 @@ pub fn spawn_planet(
         },
         Planet {},
         Mass { mass: PLANET_MASS },
+        AngularVelocity {
+            velocity: PLANET_ANGULAR_SPEED,
+        },
     ));
 }
 
@@ -123,6 +128,9 @@ pub fn spawn_asteroid(
             mass: ASTEROID_MASS,
         },
         Velocity { x: vel_x, y: vel_y },
+        AngularVelocity {
+            velocity: random::<f32>() * ASTEROID_ANGULAR_SPEED,
+        },
     ));
 }
 
