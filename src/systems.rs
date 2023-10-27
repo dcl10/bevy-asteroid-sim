@@ -1,6 +1,6 @@
 use bevy::prelude::*;
-use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
+use rand::seq::SliceRandom;
 use rand::{random, Rng};
 
 use crate::components::{Asteroid, Mass, Planet, Velocity};
@@ -9,10 +9,17 @@ use crate::resources::AsteroidSpawnTimer;
 const SCALE_FACTOR: f32 = 10e9;
 const PLANET_RADIUS: f32 = 50.0;
 const PLANET_MASS: f32 = 1.9e27 / SCALE_FACTOR;
+const PLANET_PNG: &str = "images/planet05.png";
 
 const ASTEROID_RADIUS: f32 = 10.0;
 const ASTEROID_MASS: f32 = 9.3e20 / SCALE_FACTOR;
 const ASTEROID_SPEED: f32 = 100.0;
+const ASTEROID_PNGS: [&str; 4] = [
+    "images/meteorBrown_big1.png",
+    "images/meteorBrown_big2.png",
+    "images/meteorGrey_big1.png",
+    "images/meteorGrey_big2.png",
+];
 
 const G: f32 = 6.67e-11;
 
@@ -25,8 +32,7 @@ const G: f32 = 6.67e-11;
 /// * `window_query` - a query to get the primary window of the app
 pub fn spawn_planet(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
     window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let window = window_query.get_single().unwrap();
@@ -37,9 +43,8 @@ pub fn spawn_planet(
 
     // Circle
     commands.spawn((
-        MaterialMesh2dBundle {
-            mesh: meshes.add(shape::Circle::new(PLANET_RADIUS).into()).into(),
-            material: materials.add(ColorMaterial::from(Color::PURPLE)),
+        SpriteBundle {
+            texture: asset_server.load(PLANET_PNG),
             transform: Transform::from_xyz(x, y, 0.0),
             ..default()
         },
@@ -71,8 +76,7 @@ pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<Pr
 /// * `timer` - the timer controlling asteroid spawning.
 pub fn spawn_asteroid(
     mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
+    asset_server: Res<AssetServer>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     timer: Res<AsteroidSpawnTimer>,
 ) {
@@ -109,11 +113,8 @@ pub fn spawn_asteroid(
     let vel_y = rng.gen_range(-1.0 * ASTEROID_SPEED..ASTEROID_SPEED);
 
     commands.spawn((
-        MaterialMesh2dBundle {
-            mesh: meshes
-                .add(shape::Circle::new(ASTEROID_RADIUS).into())
-                .into(),
-            material: materials.add(ColorMaterial::from(Color::BLUE)),
+        SpriteBundle {
+            texture: asset_server.load(ASTEROID_PNGS.choose(&mut rng).unwrap().to_string()),
             transform: Transform::from_xyz(x, y, 0.0),
             ..default()
         },
