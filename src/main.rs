@@ -1,9 +1,10 @@
 use bevy::prelude::*;
+use bevy::window::{PresentMode, WindowTheme};
 
 use crate::resources::AsteroidSpawnTimer;
 use crate::systems::{
     collide_asteroids, collide_asteroids_with_planet, despawn_off_screen_asteroid, gravity,
-    move_asteroids, spawn_asteroid, spawn_camera, spawn_planet, tick_asteroid_spawn_timer,
+    move_asteroids, rotate_body, setup, spawn_asteroid, spawn_planet, tick_asteroid_spawn_timer,
 };
 
 mod components;
@@ -12,15 +13,30 @@ mod systems;
 
 fn main() {
     App::new()
-        .add_plugins(DefaultPlugins)
+        .add_plugins(DefaultPlugins.set(WindowPlugin {
+            primary_window: Some(Window {
+                title: "bevy-asteroid-sim".into(),
+                resolution: (1175., 800.).into(),
+                present_mode: PresentMode::AutoVsync,
+                window_theme: Some(WindowTheme::Dark),
+                resizable: false,
+                ..default()
+            }),
+            ..default()
+        }))
         .init_resource::<AsteroidSpawnTimer>()
-        .add_systems(Startup, (spawn_camera, spawn_planet).chain())
-        .add_systems(PreUpdate, spawn_asteroid)
-        .add_systems(Update, tick_asteroid_spawn_timer)
-        .add_systems(Update, move_asteroids)
-        .add_systems(Update, collide_asteroids_with_planet)
-        .add_systems(Update, collide_asteroids)
-        .add_systems(Update, despawn_off_screen_asteroid)
-        .add_systems(Update, gravity)
+        .add_systems(Startup, (setup, spawn_planet))
+        .add_systems(PreUpdate, (tick_asteroid_spawn_timer, spawn_asteroid))
+        .add_systems(
+            Update,
+            (
+                move_asteroids,
+                collide_asteroids_with_planet,
+                collide_asteroids,
+                gravity,
+                rotate_body,
+            ),
+        )
+        .add_systems(PostUpdate, despawn_off_screen_asteroid)
         .run();
 }
