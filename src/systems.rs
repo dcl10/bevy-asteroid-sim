@@ -63,12 +63,24 @@ pub fn spawn_planet(
 /// # Arguments
 /// * `commands` - a `bevy` `Commands` struct
 /// * `window_query` - a query to get the primary window of the app
-pub fn spawn_camera(mut commands: Commands, window_query: Query<&Window, With<PrimaryWindow>>) {
+pub fn setup(
+    mut commands: Commands,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+    asset_server: Res<AssetServer>,
+) {
     let window = window_query.get_single().unwrap();
-    commands.spawn(Camera2dBundle {
-        transform: Transform::from_xyz(window.width() / 2.0, window.height() / 2.0, 0.0),
+    let background = asset_server.load("images/background.png");
+    commands.spawn(SpriteBundle {
+        texture: background,
+        transform: Transform::from_xyz(window.width() / 2.0, window.height() / 2.0, -10.0),
         ..default()
     });
+    commands
+        .spawn(Camera2dBundle {
+            transform: Transform::from_xyz(window.width() / 2.0, window.height() / 2.0, 0.0),
+            ..default()
+        })
+        .commands();
 }
 
 /// Spawn an asteroid randomly.
