@@ -88,6 +88,9 @@ impl Orbit {
     }
 }
 
+#[derive(Component)]
+pub struct Moon {}
+
 #[cfg(test)]
 mod tests {
     use super::*;
