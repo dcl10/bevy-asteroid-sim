@@ -342,15 +342,17 @@ pub fn spawn_moon(
         ),
         With<Asteroid>,
     >,
-    window_query: Query<&Window, With<PrimaryWindow>>,
+    planet_query: Query<&Transform, With<Planet>>,
 ) {
-    let window = window_query.get_single().unwrap();
+    let planet = planet_query.get_single().unwrap();
 
-    for (entity, transform, orbit, omega, velocity, mass) in asteroids_query.iter() {
-        if orbit.is_elliptical()
-            && (orbit.r_max < (window.physical_width() as f32 - (2f32 * ASTEROID_RADIUS))
-                || orbit.r_max < window.physical_height() as f32 - (2f32 * ASTEROID_RADIUS))
-        {
+    for (entity, transform, orbit, angular_velocity, velocity, mass) in asteroids_query.iter() {
+        let distance = transform
+            .translation
+            .distance_squared(planet.translation)
+            .sqrt();
+
+        if orbit.is_elliptical() && orbit.r_min < distance && distance < orbit.r_max {
             commands.spawn((
                 MaterialMesh2dBundle {
                     mesh: meshes
@@ -362,7 +364,7 @@ pub fn spawn_moon(
                 },
                 Moon {},
                 AngularVelocity {
-                    velocity: omega.velocity,
+                    velocity: angular_velocity.velocity,
                 },
                 Velocity {
                     x: velocity.x,
