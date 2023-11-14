@@ -6,6 +6,7 @@ use rand::{random, Rng};
 
 use crate::components::{AngularVelocity, Asteroid, Mass, Moon, Orbit, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
+use crate::traits::Between;
 
 const SCALE_FACTOR: f32 = 10e9;
 const PLANET_RADIUS: f32 = 50.0;
@@ -306,22 +307,28 @@ pub fn rotate_body(mut query: Query<(&mut Transform, &AngularVelocity)>, time: R
 pub fn update_orbits(
     mut asteroids_query: Query<(&Transform, &mut Orbit), With<Asteroid>>,
     planet_query: Query<&Transform, With<Planet>>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
 ) {
     let planet = planet_query.get_single().unwrap();
+    let window = window_query.get_single().unwrap();
 
     for (asteroid, mut orbit) in asteroids_query.iter_mut() {
-        // update orbit.r_min
         let distance = asteroid
             .translation
             .distance_squared(planet.translation)
             .sqrt();
-        if distance < orbit.r_min {
+
+        // update orbit.r_min
+        if distance.between(ASTEROID_RADIUS + PLANET_RADIUS, orbit.r_min) {
             orbit.r_min = distance;
             continue;
         }
 
-        // update orbit.r_max is orbit.r_min wasn't updated
-        if distance > orbit.r_max {
+        // update orbit.r_max
+        if distance.between(orbit.r_min, (window.height() / 2f32) - ASTEROID_RADIUS)
+            && distance.between(orbit.r_min, (window.width() / 2f32) - ASTEROID_RADIUS)
+            && distance > orbit.r_max
+        {
             orbit.r_max = distance;
         }
     }
@@ -342,17 +349,9 @@ pub fn spawn_moon(
         ),
         With<Asteroid>,
     >,
-    planet_query: Query<&Transform, With<Planet>>,
 ) {
-    let planet = planet_query.get_single().unwrap();
-
     for (entity, transform, orbit, angular_velocity, velocity, mass) in asteroids_query.iter() {
-        let distance = transform
-            .translation
-            .distance_squared(planet.translation)
-            .sqrt();
-
-        if orbit.is_elliptical() && orbit.r_min < distance && distance < orbit.r_max {
+        if orbit.is_elliptical() {
             commands.spawn((
                 MaterialMesh2dBundle {
                     mesh: meshes
