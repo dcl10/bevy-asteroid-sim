@@ -11,6 +11,7 @@ use crate::systems::{
 mod components;
 mod resources;
 mod systems;
+mod traits;
 
 fn main() {
     App::new()
