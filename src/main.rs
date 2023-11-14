@@ -5,6 +5,7 @@ use crate::resources::AsteroidSpawnTimer;
 use crate::systems::{
     collide_asteroids, collide_asteroids_with_planet, despawn_off_screen_asteroid, gravity,
     move_asteroids, rotate_body, setup, spawn_asteroid, spawn_planet, tick_asteroid_spawn_timer,
+    update_orbits,
 };
 
 mod components;
@@ -35,6 +36,7 @@ fn main() {
                 collide_asteroids,
                 gravity,
                 rotate_body,
+                update_orbits,
             ),
         )
         .add_systems(PostUpdate, despawn_off_screen_asteroid)

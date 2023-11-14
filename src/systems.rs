@@ -299,3 +299,32 @@ pub fn rotate_body(mut query: Query<(&mut Transform, &AngularVelocity)>, time: R
         transform.rotate_z(omega.velocity * time.delta_seconds())
     }
 }
+
+/// Update the minimum and maximum radii of asteroids' orbits.
+///
+/// # Arguments
+/// * `asteroids_query` - query to get asteroid coordinates and orbit
+/// * `planet_query` - query to get the coordinates of the planet
+pub fn update_orbits(
+    mut asteroids_query: Query<(&Transform, &mut Orbit), With<Asteroid>>,
+    planet_query: Query<&Transform, With<Planet>>,
+) {
+    let planet = planet_query.get_single().unwrap();
+
+    for (asteroid, mut orbit) in asteroids_query.iter_mut() {
+        // update orbit.r_min
+        let distance = asteroid
+            .translation
+            .distance_squared(planet.translation)
+            .sqrt();
+        if distance < orbit.r_min {
+            orbit.r_min = distance;
+            continue;
+        }
+
+        // update orbit.r_max is orbit.r_min wasn't updated
+        if distance > orbit.r_max {
+            orbit.r_max = distance;
+        }
+    }
+}
