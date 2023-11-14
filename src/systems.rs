@@ -3,7 +3,7 @@ use bevy::window::PrimaryWindow;
 use rand::seq::SliceRandom;
 use rand::{random, Rng};
 
-use crate::components::{AngularVelocity, Asteroid, Mass, Planet, Velocity};
+use crate::components::{AngularVelocity, Asteroid, Mass, Orbit, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
 const SCALE_FACTOR: f32 = 10e9;
@@ -142,6 +142,7 @@ pub fn spawn_asteroid(
         },
         Velocity { x: vel_x, y: vel_y },
         AngularVelocity { velocity: omega },
+        Orbit::default(),
     ));
 }
 

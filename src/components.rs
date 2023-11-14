@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use bevy::utils::petgraph::algo::FloatMeasure;
 
 #[derive(Component)]
 pub struct Planet {}
@@ -23,12 +24,23 @@ pub struct AngularVelocity {
 }
 
 /// A `struct` containing the minimum and maximum distances to a central body.
-#[derive(Component, Default)]
+#[derive(Component)]
 pub struct Orbit {
     /// The minimum distance to the central body
     pub r_min: f32,
     /// The maximum distance to the central body
     pub r_max: f32,
+}
+
+impl Default for Orbit {
+    /// Create a default `Orbit` with a minimum radius of positive infinity
+    /// and a maximum radius of 0.0.
+    fn default() -> Self {
+        Self {
+            r_min: f32::infinite(),
+            r_max: 0f32,
+        }
+    }
 }
 
 impl Orbit {
