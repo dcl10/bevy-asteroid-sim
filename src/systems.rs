@@ -159,13 +159,10 @@ pub fn tick_asteroid_spawn_timer(mut spawn_timer: ResMut<AsteroidSpawnTimer>, ti
 /// Change the positions of the asteroids based on their velocities.
 ///
 /// # Arguments
-/// * `asteroids` - query to get `Asteroid`s and their `Position`s and `Velocity`s
+/// * `satellites` - query to get `Asteroid`s and `Moon`s, along with their positions and `Velocity`s
 /// * `time` - the clock tracking the passage of time in game
-pub fn move_asteroids(
-    mut asteroids: Query<(&Asteroid, &mut Transform, &Velocity)>,
-    time: Res<Time>,
-) {
-    for (_, mut position, velocity) in asteroids.iter_mut() {
+pub fn update_velocities(mut satellites: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
+    for (mut position, velocity) in satellites.iter_mut() {
         let elapsed_time = time.delta_seconds();
         position.translation +=
             Vec3::new(velocity.x * elapsed_time, velocity.y * elapsed_time, 0.0);
