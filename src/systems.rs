@@ -1,9 +1,10 @@
 use bevy::prelude::*;
+use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
 use rand::seq::SliceRandom;
 use rand::{random, Rng};
 
-use crate::components::{AngularVelocity, Asteroid, Mass, Orbit, Planet, Velocity};
+use crate::components::{AngularVelocity, Asteroid, Mass, Moon, Orbit, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
 
 const SCALE_FACTOR: f32 = 10e9;
@@ -325,6 +326,54 @@ pub fn update_orbits(
         // update orbit.r_max is orbit.r_min wasn't updated
         if distance > orbit.r_max {
             orbit.r_max = distance;
+        }
+    }
+}
+
+pub fn spawn_moon(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    asteroids_query: Query<
+        (
+            Entity,
+            &Transform,
+            &Orbit,
+            &AngularVelocity,
+            &Velocity,
+            &Mass,
+        ),
+        With<Asteroid>,
+    >,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let window = window_query.get_single().unwrap();
+
+    for (entity, transform, orbit, omega, velocity, mass) in asteroids_query.iter() {
+        if orbit.is_elliptical()
+            && (orbit.r_max < (window.physical_width() as f32 - (2f32 * ASTEROID_RADIUS))
+                || orbit.r_max < window.physical_height() as f32 - (2f32 * ASTEROID_RADIUS))
+        {
+            commands.spawn((
+                MaterialMesh2dBundle {
+                    mesh: meshes
+                        .add(shape::Circle::new(ASTEROID_RADIUS).into())
+                        .into(),
+                    material: materials.add(ColorMaterial::from(Color::PURPLE)),
+                    transform: transform.clone(),
+                    ..default()
+                },
+                Moon {},
+                AngularVelocity {
+                    velocity: omega.velocity,
+                },
+                Velocity {
+                    x: velocity.x,
+                    y: velocity.y,
+                },
+                Mass { mass: mass.mass },
+            ));
+            commands.entity(entity).despawn()
         }
     }
 }
