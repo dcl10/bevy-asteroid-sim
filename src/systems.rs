@@ -259,7 +259,7 @@ pub fn despawn_off_screen_asteroid(
 /// * `asteroids_query` - query to get asteroid coordinates, masses and velocities
 /// * `planet_query` - query to get the coordinates and mass of the planet
 pub fn gravity(
-    mut asteroids_query: Query<(&Transform, &Mass, &mut Velocity), With<Asteroid>>,
+    mut asteroids_query: Query<(&Transform, &Mass, &mut Velocity)>,
     planet_query: Query<(&Transform, &Mass), With<Planet>>,
     time: Res<Time>,
 ) {
