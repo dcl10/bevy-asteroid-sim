@@ -1,10 +1,12 @@
 use bevy::prelude::*;
+use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
 use rand::seq::SliceRandom;
 use rand::{random, Rng};
 
-use crate::components::{AngularVelocity, Asteroid, Mass, Planet, Velocity};
+use crate::components::{AngularVelocity, Asteroid, Mass, Moon, Orbit, Planet, Velocity};
 use crate::resources::AsteroidSpawnTimer;
+use crate::traits::Between;
 
 const SCALE_FACTOR: f32 = 10e9;
 const PLANET_RADIUS: f32 = 50.0;
@@ -29,8 +31,7 @@ const G: f32 = 6.67e-11;
 ///
 /// # Arguments
 /// * `commands` - a `bevy` `Commands` struct
-/// * `meshes` - the resource for getting `Mesh`s
-/// * `materials` - the resource for the `ColorMaterial`s
+/// * `asset_server` - the assert server that serves the planet image
 /// * `window_query` - a query to get the primary window of the app
 pub fn spawn_planet(
     mut commands: Commands,
@@ -63,6 +64,7 @@ pub fn spawn_planet(
 /// # Arguments
 /// * `commands` - a `bevy` `Commands` struct
 /// * `window_query` - a query to get the primary window of the app
+/// * `asset_server` - the assert server that serves the background image
 pub fn setup(
     mut commands: Commands,
     window_query: Query<&Window, With<PrimaryWindow>>,
@@ -87,8 +89,7 @@ pub fn setup(
 ///
 /// # Arguments
 /// * `commands` - a `bevy` `Commands` struct
-/// * `meshes` - the resource for getting `Mesh`s
-/// * `materials` - the resource for the `ColorMaterial`s
+/// * `asset_server` - the assert server that serves the asteroid image
 /// * `window_query` - a query to get the primary window of the app
 /// * `timer` - the timer controlling asteroid spawning.
 pub fn spawn_asteroid(
@@ -142,6 +143,7 @@ pub fn spawn_asteroid(
         },
         Velocity { x: vel_x, y: vel_y },
         AngularVelocity { velocity: omega },
+        Orbit::default(),
     ));
 }
 
@@ -157,13 +159,10 @@ pub fn tick_asteroid_spawn_timer(mut spawn_timer: ResMut<AsteroidSpawnTimer>, ti
 /// Change the positions of the asteroids based on their velocities.
 ///
 /// # Arguments
-/// * `asteroids` - query to get `Asteroid`s and their `Position`s and `Velocity`s
+/// * `satellites` - query to get `Asteroid`s and `Moon`s, along with their positions and `Velocity`s
 /// * `time` - the clock tracking the passage of time in game
-pub fn move_asteroids(
-    mut asteroids: Query<(&Asteroid, &mut Transform, &Velocity)>,
-    time: Res<Time>,
-) {
-    for (_, mut position, velocity) in asteroids.iter_mut() {
+pub fn update_velocities(mut satellites: Query<(&mut Transform, &Velocity)>, time: Res<Time>) {
+    for (mut position, velocity) in satellites.iter_mut() {
         let elapsed_time = time.delta_seconds();
         position.translation +=
             Vec3::new(velocity.x * elapsed_time, velocity.y * elapsed_time, 0.0);
@@ -260,7 +259,7 @@ pub fn despawn_off_screen_asteroid(
 /// * `asteroids_query` - query to get asteroid coordinates, masses and velocities
 /// * `planet_query` - query to get the coordinates and mass of the planet
 pub fn gravity(
-    mut asteroids_query: Query<(&Transform, &Mass, &mut Velocity), With<Asteroid>>,
+    mut asteroids_query: Query<(&Transform, &Mass, &mut Velocity)>,
     planet_query: Query<(&Transform, &Mass), With<Planet>>,
     time: Res<Time>,
 ) {
@@ -296,5 +295,90 @@ pub fn gravity(
 pub fn rotate_body(mut query: Query<(&mut Transform, &AngularVelocity)>, time: Res<Time>) {
     for (mut transform, omega) in query.iter_mut() {
         transform.rotate_z(omega.velocity * time.delta_seconds())
+    }
+}
+
+/// Update the minimum and maximum radii of asteroids' orbits.
+///
+/// # Arguments
+/// * `asteroids_query` - query to get asteroid coordinates and orbit
+/// * `planet_query` - query to get the coordinates of the planet
+/// * `window_query` - a query to get the primary window of the app
+pub fn update_orbits(
+    mut asteroids_query: Query<(&Transform, &mut Orbit), With<Asteroid>>,
+    planet_query: Query<&Transform, With<Planet>>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) {
+    let planet = planet_query.get_single().unwrap();
+    let window = window_query.get_single().unwrap();
+
+    for (asteroid, mut orbit) in asteroids_query.iter_mut() {
+        let distance = asteroid
+            .translation
+            .distance_squared(planet.translation)
+            .sqrt();
+
+        // update orbit.r_min
+        if distance.between(ASTEROID_RADIUS + PLANET_RADIUS, orbit.r_min) {
+            orbit.r_min = distance;
+            continue;
+        }
+
+        // update orbit.r_max
+        if distance.between(orbit.r_min, (window.height() / 2f32) - ASTEROID_RADIUS)
+            && distance.between(orbit.r_min, (window.width() / 2f32) - ASTEROID_RADIUS)
+            && distance > orbit.r_max
+        {
+            orbit.r_max = distance;
+        }
+    }
+}
+
+/// Spawn moons when asteroids obtain stable elliptical orbits.
+///
+/// # Arguments
+/// * `commands` - a `bevy` `Commands` struct
+/// * `meshes` - the resource for getting `Mesh`s
+/// * `materials` - the resource for the `ColorMaterial`s
+/// * `asteroids_query` - query to get asteroid coordinates and other attributes
+pub fn spawn_moon(
+    mut commands: Commands,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    asteroids_query: Query<
+        (
+            Entity,
+            &Transform,
+            &Orbit,
+            &AngularVelocity,
+            &Velocity,
+            &Mass,
+        ),
+        With<Asteroid>,
+    >,
+) {
+    for (entity, transform, orbit, angular_velocity, velocity, mass) in asteroids_query.iter() {
+        if orbit.is_elliptical() {
+            commands.spawn((
+                MaterialMesh2dBundle {
+                    mesh: meshes
+                        .add(shape::Circle::new(ASTEROID_RADIUS).into())
+                        .into(),
+                    material: materials.add(ColorMaterial::from(Color::PURPLE)),
+                    transform: transform.clone(),
+                    ..default()
+                },
+                Moon {},
+                AngularVelocity {
+                    velocity: angular_velocity.velocity,
+                },
+                Velocity {
+                    x: velocity.x,
+                    y: velocity.y,
+                },
+                Mass { mass: mass.mass },
+            ));
+            commands.entity(entity).despawn()
+        }
     }
 }
