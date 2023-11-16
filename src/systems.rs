@@ -31,8 +31,7 @@ const G: f32 = 6.67e-11;
 ///
 /// # Arguments
 /// * `commands` - a `bevy` `Commands` struct
-/// * `meshes` - the resource for getting `Mesh`s
-/// * `materials` - the resource for the `ColorMaterial`s
+/// * `asset_server` - the assert server that serves the planet image
 /// * `window_query` - a query to get the primary window of the app
 pub fn spawn_planet(
     mut commands: Commands,
@@ -65,6 +64,7 @@ pub fn spawn_planet(
 /// # Arguments
 /// * `commands` - a `bevy` `Commands` struct
 /// * `window_query` - a query to get the primary window of the app
+/// * `asset_server` - the assert server that serves the background image
 pub fn setup(
     mut commands: Commands,
     window_query: Query<&Window, With<PrimaryWindow>>,
@@ -89,8 +89,7 @@ pub fn setup(
 ///
 /// # Arguments
 /// * `commands` - a `bevy` `Commands` struct
-/// * `meshes` - the resource for getting `Mesh`s
-/// * `materials` - the resource for the `ColorMaterial`s
+/// * `asset_server` - the assert server that serves the asteroid image
 /// * `window_query` - a query to get the primary window of the app
 /// * `timer` - the timer controlling asteroid spawning.
 pub fn spawn_asteroid(
@@ -304,6 +303,7 @@ pub fn rotate_body(mut query: Query<(&mut Transform, &AngularVelocity)>, time: R
 /// # Arguments
 /// * `asteroids_query` - query to get asteroid coordinates and orbit
 /// * `planet_query` - query to get the coordinates of the planet
+/// * `window_query` - a query to get the primary window of the app
 pub fn update_orbits(
     mut asteroids_query: Query<(&Transform, &mut Orbit), With<Asteroid>>,
     planet_query: Query<&Transform, With<Planet>>,
@@ -334,6 +334,13 @@ pub fn update_orbits(
     }
 }
 
+/// Spawn moons when asteroids obtain stable elliptical orbits.
+///
+/// # Arguments
+/// * `commands` - a `bevy` `Commands` struct
+/// * `meshes` - the resource for getting `Mesh`s
+/// * `materials` - the resource for the `ColorMaterial`s
+/// * `asteroids_query` - query to get asteroid coordinates and other attributes
 pub fn spawn_moon(
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
